@@ -16,14 +16,14 @@ public enum SceneId
 
 public class AppSceneManager : MonoBehaviour
 {
-    private struct Group
+    private struct SceneGroup
     {
         public SceneId[] sceneIds;
     }
-    private static readonly Group[] _groups =
+    private static readonly SceneGroup[] _sceneGroups =
     {
-        new Group {sceneIds = new[] {SceneId.A}},
-        new Group {sceneIds = new[] {SceneId.B, SceneId.C}},
+        new SceneGroup {sceneIds = new[] {SceneId.A}},
+        new SceneGroup {sceneIds = new[] {SceneId.B, SceneId.C}},
     };
     
     private static AppSceneManager _instance;
@@ -141,11 +141,11 @@ public class AppSceneManager : MonoBehaviour
 
     private static int FindSceneGroupIndex(SceneId sceneId)
     {
-        for (var i = 0; i < _groups.Length; ++i)
+        for (var i = 0; i < _sceneGroups.Length; ++i)
         {
-            for (var j = 0; j < _groups[i].sceneIds.Length; ++j)
+            for (var j = 0; j < _sceneGroups[i].sceneIds.Length; ++j)
             {
-                if (_groups[i].sceneIds[j] == sceneId)
+                if (_sceneGroups[i].sceneIds[j] == sceneId)
                 {
                     return i;
                 }
@@ -159,12 +159,12 @@ public class AppSceneManager : MonoBehaviour
         foreach (var loadedSceneId in _loadedSceneIds.ToArray())
         {
             var i = 0;
-            for (; i < _groups[excludeGroupIndex].sceneIds.Length; ++i)
+            for (; i < _sceneGroups[excludeGroupIndex].sceneIds.Length; ++i)
             {
-                var sceneId = _groups[excludeGroupIndex].sceneIds[i];
+                var sceneId = _sceneGroups[excludeGroupIndex].sceneIds[i];
                 if (loadedSceneId == sceneId) break;
             }
-            if (i < _groups[excludeGroupIndex].sceneIds.Length) continue;
+            if (i < _sceneGroups[excludeGroupIndex].sceneIds.Length) continue;
             var sceneName = loadedSceneId.ToString();
             Debug.LogFormat("Unload Scene: {0}", sceneName);
             var scene = SceneManager.GetSceneByName(sceneName);
@@ -177,9 +177,9 @@ public class AppSceneManager : MonoBehaviour
 
     private static IEnumerator LoadSceneAsync(int groupIndex)
     {
-        for (var i = 0; i < _groups[groupIndex].sceneIds.Length; ++i)
+        for (var i = 0; i < _sceneGroups[groupIndex].sceneIds.Length; ++i)
         {
-            var sceneId = _groups[groupIndex].sceneIds[i];
+            var sceneId = _sceneGroups[groupIndex].sceneIds[i];
             if (-1 != _loadedSceneIds.FindIndex(element => element == sceneId)) continue;
             var sceneName = sceneId.ToString();
             Debug.LogFormat("Load Scene: {0}", sceneName);

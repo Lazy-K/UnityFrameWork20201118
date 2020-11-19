@@ -11,6 +11,7 @@ public enum SceneId
     A,
     B,
     C,
+    D,
     Length
 }
 
@@ -25,16 +26,29 @@ public class AppSceneManager : MonoBehaviour
         new SceneGroup {sceneIds = new[] {SceneId.A}},
         new SceneGroup {sceneIds = new[] {SceneId.B, SceneId.C}},
     };
+    private static int FindSceneGroupIndex(SceneId sceneId)
+    {
+        for (var i = 0; i < _sceneGroups.Length; ++i)
+        {
+            if (Array.Exists(_sceneGroups[i].sceneIds, element => element == sceneId))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
+    private static int _loadedSceneGroupIndex = -1;
     
     private static AppSceneManager _instance;
     private static bool _isLateInitialized;
-    private static List<SceneId> _loadedSceneIds = new List<SceneId>();
+    private static readonly List<SceneId> _loadedSceneIds = new List<SceneId>();
     public class SceneReserve
     {
         public SceneId sceneId;
         public Dictionary<string, string> argument;
     }
-    private static Stack<SceneReserve> _stackSceneReserve = new Stack<SceneReserve>();
+    private static readonly Stack<SceneReserve> _stackSceneReserve = new Stack<SceneReserve>();
     private static SceneReserve _currentSceneReserve = null;
     private static SceneReserve _previousSceneReserve = null;
     
@@ -98,34 +112,70 @@ public class AppSceneManager : MonoBehaviour
 
     public static SceneReserve GetCurrentSceneReserve() { return _currentSceneReserve; }
     public static SceneReserve GetPreviousSceneReserve() { return _previousSceneReserve; }
-    
-    public static void LoadSceneReserve()
-    {
-        _instance.StartCoroutine(LoadSceneAsync());
-    }
+
+    public static void LoadSceneReserve() { _instance.StartCoroutine(LoadSceneAsync()); }
 
     private static IEnumerator LoadSceneAsync()
     {
         var lastSceneReserve = _currentSceneReserve;
         var nextSceneReserve = _stackSceneReserve.Last();
-        
-        var groupIndex = FindSceneGroupIndex(nextSceneReserve.sceneId);
-        yield return LeaveSceneAsync();
-        if (-1 != groupIndex)
-        {
-            yield return UnloadSceneAsync(groupIndex);
-        }
-        yield return LoadSceneAsync(groupIndex);
-        yield return EnterSceneAsync(nextSceneReserve.sceneId);
-
         _previousSceneReserve = lastSceneReserve;
         _currentSceneReserve = nextSceneReserve;
+        
+        yield return LeaveSceneAsync(lastSceneReserve.sceneId);
+        var sceneGroupIndex = FindSceneGroupIndex(nextSceneReserve.sceneId);
+        if (-1 != sceneGroupIndex)
+        {
+            if (_loadedSceneGroupIndex != sceneGroupIndex)
+            {
+                for (var i = 0; i < _loadedSceneIds.Count; ++i)
+                {
+                    var sceneName = _loadedSceneIds[i].ToString();
+                    Debug.LogFormat("Unload Scene: {0}", sceneName);
+                    var scene = SceneManager.GetSceneByName(sceneName);
+                    var appScene = GetAppScene(scene);
+                    yield return appScene.OnScenePreUnloadAsync();
+                    yield return SceneManager.UnloadSceneAsync(scene, UnloadSceneOptions.None);
+                }
+                _loadedSceneIds.Clear();
+                
+                for (var i = 0; i < _sceneGroups[sceneGroupIndex].sceneIds.Length; ++i)
+                {
+                    var sceneId = _sceneGroups[sceneGroupIndex].sceneIds[i];
+                    yield return LoadSceneAsync(sceneId);
+                }
+                _loadedSceneGroupIndex = sceneGroupIndex;
+            }
+        }
+        else
+        {
+            if (!_loadedSceneIds.Exists(element => element == nextSceneReserve.sceneId))
+            {
+                yield return LoadSceneAsync(nextSceneReserve.sceneId);
+            }
+        }
+        yield return EnterSceneAsync(nextSceneReserve.sceneId);
     }
 
-    private static IEnumerator LeaveSceneAsync()
+    private static IEnumerator LoadSceneAsync(SceneId sceneId)
     {
-        var scene = SceneManager.GetActiveScene();
-        Debug.LogFormat("LeaveSceneAsync: {0}", scene.name);
+        var sceneName = sceneId.ToString();
+        Debug.LogFormat("Load Scene: {0}", sceneName);
+        var asyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+        while (!asyncOp.isDone) yield return null;
+        _loadedSceneIds.Add(sceneId);
+            
+        var scene = SceneManager.GetSceneByName(sceneName);
+        var appScene = GetAppScene(scene);
+        yield return appScene.OnSceneLoadedAsync();
+        appScene.gameObject.SetActive(false);
+    }
+
+    private static IEnumerator LeaveSceneAsync(SceneId sceneId)
+    {
+        var sceneName = sceneId.ToString();
+        Debug.LogFormat("LeaveSceneAsync: {0}", sceneName);
+        var scene = SceneManager.GetSceneByName(sceneName);
         
         var appScene = GetAppScene(scene);
 
@@ -136,61 +186,6 @@ public class AppSceneManager : MonoBehaviour
             yield return appScene.OnScenePreDeactivateAsync();
             appScene.gameObject.SetActive(false);
             yield return appScene.OnSceneDeactivatedAsync();
-        }
-    }
-
-    private static int FindSceneGroupIndex(SceneId sceneId)
-    {
-        for (var i = 0; i < _sceneGroups.Length; ++i)
-        {
-            for (var j = 0; j < _sceneGroups[i].sceneIds.Length; ++j)
-            {
-                if (_sceneGroups[i].sceneIds[j] == sceneId)
-                {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    private static IEnumerator UnloadSceneAsync(int excludeGroupIndex)
-    {
-        foreach (var loadedSceneId in _loadedSceneIds.ToArray())
-        {
-            var i = 0;
-            for (; i < _sceneGroups[excludeGroupIndex].sceneIds.Length; ++i)
-            {
-                var sceneId = _sceneGroups[excludeGroupIndex].sceneIds[i];
-                if (loadedSceneId == sceneId) break;
-            }
-            if (i < _sceneGroups[excludeGroupIndex].sceneIds.Length) continue;
-            var sceneName = loadedSceneId.ToString();
-            Debug.LogFormat("Unload Scene: {0}", sceneName);
-            var scene = SceneManager.GetSceneByName(sceneName);
-            var appScene = GetAppScene(scene);
-            yield return appScene.OnScenePreUnloadAsync();
-            yield return SceneManager.UnloadSceneAsync(scene, UnloadSceneOptions.None);
-            _loadedSceneIds.Remove(loadedSceneId);
-        }
-    }
-
-    private static IEnumerator LoadSceneAsync(int groupIndex)
-    {
-        for (var i = 0; i < _sceneGroups[groupIndex].sceneIds.Length; ++i)
-        {
-            var sceneId = _sceneGroups[groupIndex].sceneIds[i];
-            if (-1 != _loadedSceneIds.FindIndex(element => element == sceneId)) continue;
-            var sceneName = sceneId.ToString();
-            Debug.LogFormat("Load Scene: {0}", sceneName);
-            var asyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
-            while (!asyncOp.isDone) yield return null;
-            _loadedSceneIds.Add(sceneId);
-            
-            var scene = SceneManager.GetSceneByName(sceneName);
-            var appScene = GetAppScene(scene);
-            yield return appScene.OnSceneLoadedAsync();
-            appScene.gameObject.SetActive(false);
         }
     }
 
@@ -208,6 +203,5 @@ public class AppSceneManager : MonoBehaviour
 
         // Begin In Animation
         // End In Animation
-        
     }
 }

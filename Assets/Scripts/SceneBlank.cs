@@ -1,3 +1,9 @@
-﻿public class SceneBlank : AppScene
+﻿using UnityEngine;
+
+public class SceneBlank : MonoBehaviour
 {
+    private void Awake()
+    {
+        gameObject.SetActive(false);
+    }
 }

@@ -11,16 +11,12 @@ public class AppEventSystem : MonoBehaviour
 
     private static AppEventSystem _instance;
 
-    
-    private void Awake()
-    {
-        DontDestroyOnLoad(gameObject);
-        _instance = this;
-    }
-
     public static IEnumerator InitializeAsync()
     {
-        yield break;
+        var request = Resources.LoadAsync<AppEventSystem>("AppEventSystem");
+        while (!request.isDone) yield return null;
+        _instance = Instantiate(request.asset) as AppEventSystem;
+        DontDestroyOnLoad(_instance);
     }
 
     public static void SetInputEnable(bool isEnable)

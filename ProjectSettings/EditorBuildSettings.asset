@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Resources/Blank.unity
     guid: a9006b61cc466bc49acd45a32940983a
   - enabled: 1
+    path: Assets/Resources/Boot.unity
+    guid: abe59fe9c16b81c40b50c061bd3451e0
+  - enabled: 1
     path: Assets/Resources/A.unity
     guid: 50aee9f1b6224344691747e5518d7a1f
   - enabled: 1
@@ -17,4 +20,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Resources/C.unity
     guid: afc41200c612c0a4d8754139970449df
+  - enabled: 1
+    path: Assets/Resources/D.unity
+    guid: e0bdef304254374438c265691b9988f0
   m_configObjects: {}

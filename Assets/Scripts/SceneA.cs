@@ -1,7 +1,8 @@
 ﻿
+using System.Collections.Generic;
 using UnityEngine;
 
-public class SceneA : AppScene
+public class SceneA : SceneBehaviour
 {
     private void Awake()
     {
@@ -11,9 +12,9 @@ public class SceneA : AppScene
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            AppSceneManager.PopSceneReserve();
-            AppSceneManager.PushSceneReserve(new AppSceneManager.SceneReserve{sceneId = SceneId.B, argument = null});
-            AppSceneManager.LoadSceneReserve();
+            SceneScheduler.PopSceneReserve();
+            SceneScheduler.PushSceneReserve(new SceneParam{sceneId = SceneId.B, argument = null});
+            SceneScheduler.LoadTopSceneReserve();
         }
     }
 }

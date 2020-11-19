@@ -1,23 +1,25 @@
 ﻿
 using UnityEngine;
 
-public class SceneD : AppScene
+public class SceneD : SceneBehaviour
 {
     private static int _count;
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            AppSceneManager.PopSceneReserve();
+            SceneScheduler.PopSceneReserve();
             if (0 == _count++ % 2)
             {
-                AppSceneManager.PushSceneReserve(new AppSceneManager.SceneReserve {sceneId = SceneId.C, argument = null});
+                SceneScheduler.PushSceneReserve(
+                    new SceneParam {sceneId = SceneId.C, argument = null});
             }
             else
             {
-                AppSceneManager.PushSceneReserve(new AppSceneManager.SceneReserve {sceneId = SceneId.A, argument = null});
+                SceneScheduler.PushSceneReserve(
+                    new SceneParam {sceneId = SceneId.A, argument = null});
             }
-            AppSceneManager.LoadSceneReserve();
+            SceneScheduler.LoadTopSceneReserve();
         }
     }
 }

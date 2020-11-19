@@ -1,15 +1,15 @@
 ﻿
 using UnityEngine;
 
-public class SceneB : AppScene
+public class SceneB : SceneBehaviour
 {
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            AppSceneManager.PopSceneReserve();
-            AppSceneManager.PushSceneReserve(new AppSceneManager.SceneReserve{sceneId = SceneId.C, argument = null});
-            AppSceneManager.LoadSceneReserve();
+            SceneScheduler.PopSceneReserve();
+            SceneScheduler.PushSceneReserve(new SceneParam{sceneId = SceneId.C, argument = null});
+            SceneScheduler.LoadTopSceneReserve();
         }
     }
 }

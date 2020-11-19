@@ -16,10 +16,11 @@ public class SceneBehaviour : MonoBehaviour
 
     private static void ValidateScene(Scene scene)
     {
-        if (scene.name == "Boot" ||
-            scene.name == "Blank")
+        if (scene.name == "Boot" || scene.name == "Loading")
+        {
             return;
-        
+        }
+
         {
             var gos = scene.GetRootGameObjects();
             if (1 != gos.Length)
@@ -72,6 +73,7 @@ public class SceneBehaviour : MonoBehaviour
     }
 
 #if true
+
     public virtual IEnumerator OnSceneLoadedAsync() { yield break; }
     public virtual IEnumerator OnScenePreUnloadAsync() { yield break; }
 
@@ -80,7 +82,10 @@ public class SceneBehaviour : MonoBehaviour
     
     public virtual IEnumerator OnScenePreDeactivateAsync() { yield break; }
     public virtual IEnumerator OnSceneDeactivatedAsync() { yield break; }
-    
+
+    public virtual IEnumerator OnEnterAsync() { yield return null; }
+    public virtual IEnumerator OnLeaveAsync() { yield return null; }
+
     //public virtual void OnSceneVisible() {}
     //public virtual void OnSceneInvisible() {}
 #else
